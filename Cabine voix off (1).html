@@ -1,0 +1,508 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cabine voix off</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #e9eeec;
+  --surface: #f7faf9;
+  --fg: #14201d;
+  --muted: #51625d;
+  --line: #c9d4d0;
+  --accent: #0b6a60;
+  --accent-fg: #ffffff;
+  --rec: #c42f26;
+  --rec-fg: #ffffff;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1514; --surface: #16201e; --fg: #e8efec; --muted: #9bada7; --line: #2a3a37;
+    --accent: #52c7b8; --accent-fg: #06201c; --rec: #e5564d; --rec-fg: #1a0705;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1514; --surface: #16201e; --fg: #e8efec; --muted: #9bada7; --line: #2a3a37;
+  --accent: #52c7b8; --accent-fg: #06201c; --rec: #e5564d; --rec-fg: #1a0705;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html { min-height: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+*, *::before, *::after { box-sizing: border-box; }
+button, label, select, textarea { font-family: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: 0.01em; }
+.count { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.btn {
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn[aria-pressed="true"], .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+.tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tools select {
+  min-height: 44px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); padding: 0 10px; font-size: 15px;
+}
+.tag { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+.stage { flex: none; display: flex; flex-direction: column; }
+.script {
+  flex: none; height: 48vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 20px 18px 48vh; font-size: 28px; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty;
+}
+.editor {
+  flex: none; height: 50vh; width: 100%; resize: none;
+  background: var(--surface); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+  font-size: 18px; line-height: 1.5;
+}
+.editor-help { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+
+.deck {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.chip {
+  flex: none; position: relative; width: 44px; height: 44px; border-radius: 10px;
+  border: 1px solid var(--line); background: transparent; color: var(--fg);
+  font-family: var(--font-mono); font-size: 15px; cursor: pointer;
+}
+.chip[aria-current="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.chip.done::after {
+  content: ""; position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--rec);
+}
+
+.row { display: flex; gap: 8px; align-items: stretch; }
+.nav { width: 52px; font-size: 24px; padding: 0; }
+.rec {
+  flex: 1; min-width: 0; min-height: 56px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border-radius: 14px; border: 0;
+  background: var(--rec); color: var(--rec-fg);
+  font-size: 18px; font-weight: 700; text-align: center; cursor: pointer;
+}
+.rec::before { content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--rec-fg); flex: none; }
+.rec.live { animation: pulse 1.2s ease-in-out infinite; }
+.rec.live::before { border-radius: 3px; }
+.rec:disabled { opacity: 0.4; cursor: default; animation: none; }
+@keyframes pulse { 50% { opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .rec.live { animation: none; } }
+
+.alt { position: relative; overflow: hidden; font-weight: 400; font-size: 14px; min-height: 40px; color: var(--muted); }
+.alt input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.alt:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.msg { margin: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--rec); font-size: 14px; line-height: 1.4; }
+
+.playback { display: flex; flex-direction: column; gap: 6px; }
+.playback audio { width: 100%; }
+.playback .meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.playback .meta span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link { background: none; border: 0; color: var(--fg); text-decoration: underline; font-size: 14px; min-height: 36px; padding: 0 4px; cursor: pointer; display: inline-flex; align-items: center; }
+.acts { display: flex; gap: 4px; flex: none; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+</style>
+<header class="top">
+  <h1>Cabine voix off</h1>
+  <span class="count" id="count" aria-live="polite"></span>
+  <button class="btn" id="editBtn" type="button">Modifier le texte</button>
+</header>
+
+<div class="tools" id="tools">
+  <button class="btn" id="smaller" type="button" aria-label="Réduire le texte">A−</button>
+  <button class="btn" id="bigger" type="button" aria-label="Agrandir le texte">A+</button>
+  <button class="btn" id="scrollBtn" type="button" aria-pressed="false">Défiler</button>
+  <select id="speed" aria-label="Vitesse de défilement">
+    <option value="25">Lent</option>
+    <option value="45" selected>Moyen</option>
+    <option value="70">Rapide</option>
+  </select>
+  <span class="tag" id="tag" hidden>Texte d'exemple à remplacer</span>
+</div>
+
+<main class="stage">
+  <div class="script" id="script" tabindex="0"></div>
+  <textarea class="editor" id="editor" hidden aria-label="Ton texte de voix off"></textarea>
+  <p class="editor-help" id="editorHelp" hidden>Sépare chaque scène par une ligne vide. Une scène = une voix off.</p>
+</main>
+
+<section class="deck" id="deck" aria-label="Enregistrement">
+  <div class="chips" id="chips"></div>
+  <p class="msg" id="msg" role="alert" hidden></p>
+  <div class="row">
+    <button class="btn nav" id="prev" type="button" aria-label="Scène précédente">‹</button>
+    <button class="rec" id="recBtn" type="button">Enregistrer la voix off</button>
+    <button class="btn nav" id="next" type="button" aria-label="Scène suivante">›</button>
+  </div>
+  <label class="btn alt" id="altLabel">
+    Choisir un audio enregistré sur le téléphone
+    <input id="file" type="file" accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.amr,.3gp,.opus">
+  </label>
+  <div class="playback" id="playback" hidden>
+    <audio id="audio" controls></audio>
+    <div class="meta">
+      <span id="fileName"></span>
+      <div class="acts">
+        <button class="link" id="del" type="button">Supprimer</button>
+      </div>
+    </div>
+  </div>
+  <p class="hint">Tes audios restent sur ton téléphone. La page ne les garde pas quand tu la fermes.</p>
+</section>
+
+<script>
+(function () {
+  var KEY = "cabine-voix-off-v1";
+  var EXAMPLE = [
+    "Bienvenue chez Ela Group Services, votre agence multiservices à Abidjan.",
+    "Site web, photo, vidéo, communication : tout ce qu'il faut pour faire connaître votre activité.",
+    "Une équipe à votre écoute, des tarifs clairs, des livraisons dans les délais.",
+    "Contactez-nous dès aujourd'hui sur WhatsApp."
+  ].join("\n\n");
+
+  var $ = function (s) { return document.querySelector(s); };
+  var scriptEl = $("#script"), editor = $("#editor"), editorHelp = $("#editorHelp");
+  var tools = $("#tools"), deck = $("#deck"), chipsEl = $("#chips");
+  var audio = $("#audio"), playback = $("#playback"), fileEl = $("#file");
+  var recBtn = $("#recBtn"), msgEl = $("#msg");
+
+  var text = EXAMPLE, fs = 28, scenes = [], idx = 0, recs = {}, editing = false;
+  var scrolling = false, pos = 0, last = 0, lock = null;
+  var mr = null, stream = null, chunks = [], recording = false, recIdx = 0, tStart = 0, timer = null;
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (saved && typeof saved.text === "string") text = saved.text;
+    if (saved && typeof saved.fs === "number") fs = saved.fs;
+  } catch (e) {}
+
+  function persist() {
+    try { localStorage.setItem(KEY, JSON.stringify({ text: text, fs: fs })); } catch (e) {}
+  }
+  function parse(t) {
+    return t.split(/\n\s*\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+  scenes = parse(text);
+
+  function showMsg(m) { msgEl.textContent = m || ""; msgEl.hidden = !m; }
+  function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ":" + (r < 10 ? "0" : "") + r; }
+
+  function stopScroll() {
+    scrolling = false;
+    $("#scrollBtn").setAttribute("aria-pressed", "false");
+    $("#scrollBtn").textContent = "Défiler";
+  }
+
+  function render() {
+    var n = scenes.length;
+    $("#count").textContent = n ? "Scène " + (idx + 1) + " sur " + n : "Aucune scène";
+    $("#tag").hidden = text !== EXAMPLE;
+    scriptEl.textContent = n ? scenes[idx] : "Ton texte est vide. Touche « Modifier le texte » pour l'écrire.";
+    scriptEl.style.fontSize = fs + "px";
+
+    chipsEl.textContent = "";
+    scenes.forEach(function (_, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (recs[i] ? " done" : "");
+      b.textContent = String(i + 1);
+      b.disabled = recording;
+      b.setAttribute("aria-label", "Scène " + (i + 1) + (recs[i] ? ", enregistrée" : ""));
+      if (i === idx) b.setAttribute("aria-current", "true");
+      b.addEventListener("click", function () { go(i); });
+      chipsEl.appendChild(b);
+    });
+
+    var r = recs[idx];
+    playback.hidden = !r || recording;
+    if (r) {
+      if (audio.getAttribute("data-url") !== r.url) {
+        audio.src = r.url;
+        audio.setAttribute("data-url", r.url);
+      }
+      $("#fileName").textContent = r.name || "Enregistrement";
+    } else {
+      audio.removeAttribute("src");
+      audio.removeAttribute("data-url");
+      audio.load();
+    }
+
+    recBtn.classList.toggle("live", recording);
+    if (recording) recBtn.textContent = "Arrêter · " + fmt(Math.floor((Date.now() - tStart) / 1000));
+    else recBtn.textContent = r ? "Refaire l'enregistrement" : "Enregistrer la voix off";
+    recBtn.disabled = !n;
+    $("#prev").disabled = recording || idx <= 0;
+    $("#next").disabled = recording || idx >= n - 1;
+    $("#altLabel").hidden = recording;
+    fileEl.disabled = !n;
+  }
+
+  function go(i) {
+    if (recording || i < 0 || i >= scenes.length) return;
+    audio.pause();
+    stopScroll();
+    showMsg("");
+    idx = i;
+    scriptEl.scrollTop = 0;
+    render();
+  }
+
+  $("#prev").addEventListener("click", function () { go(idx - 1); });
+  $("#next").addEventListener("click", function () { go(idx + 1); });
+
+  function store(i, blob, name) {
+    if (recs[i]) URL.revokeObjectURL(recs[i].url);
+    recs[i] = { url: URL.createObjectURL(blob), name: name, text: scenes[i] };
+  }
+
+  /* --- Enregistrement direct dans la page --- */
+  function pickMime() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    var c = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"];
+    for (var i = 0; i < c.length; i++) { if (MediaRecorder.isTypeSupported(c[i])) return c[i]; }
+    return "";
+  }
+  function extFor(type) {
+    type = (type || "").toLowerCase();
+    if (type.indexOf("mp4") > -1) return "m4a";
+    if (type.indexOf("ogg") > -1) return "ogg";
+    return "webm";
+  }
+  function releaseMic() {
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+  }
+  function endUi() {
+    recording = false;
+    clearInterval(timer);
+    timer = null;
+    render();
+  }
+
+  function startRec() {
+    showMsg("");
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      showMsg("Micro bloqué ici. Enregistre avec l'appli Dictaphone du téléphone, puis touche le bouton vert pour choisir l'audio.");
+      $("#altLabel").classList.add("primary");
+      return;
+    }
+    audio.pause();
+    stopScroll();
+    recBtn.disabled = true;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      stream = s;
+      var mime = pickMime();
+      try { mr = mime ? new MediaRecorder(s, { mimeType: mime }) : new MediaRecorder(s); }
+      catch (e) { releaseMic(); recBtn.disabled = false; showMsg("Impossible de démarrer l'enregistrement. Utilise l'enregistreur du téléphone en dessous."); return; }
+      chunks = [];
+      recIdx = idx;
+      mr.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onerror = function () { releaseMic(); showMsg("Erreur pendant l'enregistrement. Réessaie."); endUi(); };
+      mr.onstop = function () {
+        var type = mr.mimeType || mime || "audio/webm";
+        releaseMic();
+        if (chunks.length) {
+          store(recIdx, new Blob(chunks, { type: type }), "scene-" + (recIdx + 1) + "." + extFor(type));
+        } else {
+          showMsg("Rien n'a été enregistré. Réessaie.");
+        }
+        endUi();
+      };
+      mr.start(250);
+      recording = true;
+      tStart = Date.now();
+      timer = setInterval(render, 500);
+      recBtn.disabled = false;
+      render();
+    }).catch(function (err) {
+      recBtn.disabled = false;
+      var denied = err && (err.name === "NotAllowedError" || err.name === "SecurityError");
+      showMsg(denied
+        ? "Micro bloqué ici. Enregistre avec l'appli Dictaphone du téléphone, puis touche le bouton vert pour choisir l'audio."
+        : "Micro introuvable. Enregistre avec l'appli Dictaphone du téléphone, puis touche le bouton vert pour choisir l'audio.");
+      $("#altLabel").classList.add("primary");
+      render();
+    });
+  }
+  function stopRec() {
+    if (mr && mr.state !== "inactive") { try { mr.stop(); } catch (e) { releaseMic(); endUi(); } }
+  }
+  recBtn.addEventListener("click", function () { if (recording) stopRec(); else startRec(); });
+
+  /* --- Secours : enregistreur du téléphone / import --- */
+  var picking = false;
+  function guessType(f) {
+    if (f.type) return f.type;
+    var n = (f.name || "").toLowerCase();
+    if (/\.m4a$/.test(n)) return "audio/mp4";
+    if (/\.mp3$/.test(n)) return "audio/mpeg";
+    if (/\.wav$/.test(n)) return "audio/wav";
+    if (/\.(ogg|opus)$/.test(n)) return "audio/ogg";
+    if (/\.aac$/.test(n)) return "audio/aac";
+    if (/\.(3gp|amr)$/.test(n)) return "audio/3gpp";
+    return "audio/mpeg";
+  }
+  function onPick() {
+    var f = fileEl.files && fileEl.files[0];
+    if (!f || picking) return;
+    picking = true;
+    var target = idx;
+    showMsg("Fichier reçu : " + (f.name || "audio") + " (" + Math.max(1, Math.round(f.size / 1024)) + " Ko). Chargement…");
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var blob = new Blob([reader.result], { type: guessType(f) });
+        store(target, blob, f.name || ("scene-" + (target + 1)));
+        showMsg("");
+        render();
+        try { playback.scrollIntoView({ block: "nearest" }); } catch (e) {}
+      } catch (err) {
+        showMsg("Erreur : " + (err && err.message ? err.message : "lecture impossible"));
+      }
+      try { fileEl.value = ""; } catch (e) {}
+      picking = false;
+    };
+    reader.onerror = function () {
+      showMsg("Impossible de lire ce fichier. Essaie un autre enregistrement.");
+      picking = false;
+    };
+    reader.readAsArrayBuffer(f);
+  }
+  fileEl.addEventListener("change", onPick);
+  fileEl.addEventListener("input", onPick);
+  audio.addEventListener("error", function () {
+    if (recs[idx]) showMsg("Le fichier est bien pris, mais ce format ne se lit pas ici. Tu peux quand même le télécharger.");
+  });
+
+  $("#del").addEventListener("click", function () {
+    if (!recs[idx]) return;
+    audio.pause();
+    URL.revokeObjectURL(recs[idx].url);
+    delete recs[idx];
+    render();
+  });
+
+  function setSize(d) {
+    fs = Math.max(18, Math.min(52, fs + d));
+    persist();
+    render();
+  }
+  $("#smaller").addEventListener("click", function () { setSize(-2); });
+  $("#bigger").addEventListener("click", function () { setSize(2); });
+
+  function tick(t) {
+    if (!scrolling) return;
+    var speed = parseFloat($("#speed").value) || 45;
+    pos += (speed * (t - last)) / 1000;
+    last = t;
+    scriptEl.scrollTop = pos;
+    if (scriptEl.scrollTop + scriptEl.clientHeight >= scriptEl.scrollHeight - 1) {
+      stopScroll();
+      return;
+    }
+    requestAnimationFrame(tick);
+  }
+  $("#scrollBtn").addEventListener("click", function () {
+    if (scrolling) { stopScroll(); return; }
+    scrolling = true;
+    pos = scriptEl.scrollTop;
+    last = performance.now();
+    $("#scrollBtn").setAttribute("aria-pressed", "true");
+    $("#scrollBtn").textContent = "Pause";
+    requestAnimationFrame(tick);
+  });
+  ["touchstart", "wheel", "mousedown"].forEach(function (ev) {
+    scriptEl.addEventListener(ev, function () { if (scrolling) stopScroll(); }, { passive: true });
+  });
+
+  $("#editBtn").addEventListener("click", function () {
+    if (recording) return;
+    if (!editing) {
+      editing = true;
+      stopScroll();
+      audio.pause();
+      showMsg("");
+      editor.value = text;
+      scriptEl.hidden = true;
+      editor.hidden = false;
+      editorHelp.hidden = false;
+      tools.hidden = true;
+      deck.hidden = true;
+      $("#editBtn").textContent = "Valider";
+      $("#editBtn").classList.add("primary");
+      editor.focus();
+    } else {
+      editing = false;
+      text = editor.value.trim();
+      scenes = parse(text);
+      Object.keys(recs).forEach(function (k) {
+        if (scenes[k] !== recs[k].text) { URL.revokeObjectURL(recs[k].url); delete recs[k]; }
+      });
+      idx = Math.max(0, Math.min(idx, scenes.length - 1));
+      persist();
+      scriptEl.hidden = false;
+      editor.hidden = true;
+      editorHelp.hidden = true;
+      tools.hidden = false;
+      deck.hidden = false;
+      $("#editBtn").textContent = "Modifier le texte";
+      $("#editBtn").classList.remove("primary");
+      scriptEl.scrollTop = 0;
+      render();
+    }
+  });
+
+  function wake() {
+    try {
+      if ("wakeLock" in navigator && !lock) {
+        navigator.wakeLock.request("screen").then(function (l) {
+          lock = l;
+          l.addEventListener("release", function () { lock = null; });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) wake(); });
+  document.addEventListener("click", wake);
+  wake();
+
+  render();
+})();
+</script>
+
+</body></html>
